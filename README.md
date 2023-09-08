@@ -1,9 +1,9 @@
 # Todo
 -> Mobile_app
 
--> Backend
+-> Backend 
 
--> Electron-app (windows and ubuntu)
+-> Electron-app (windows and ubuntu)(Undecided)
 
 # goals
 -> Learn react native
