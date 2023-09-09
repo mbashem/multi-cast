@@ -1,3 +1,3 @@
 import { createRandomChat } from "../FakeData/Chats";
 
-type chatListItem = ReturnType<typeof createRandomChat>;
+export type ChatListItem = ReturnType<typeof createRandomChat>;

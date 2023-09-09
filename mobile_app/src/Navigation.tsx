@@ -1,8 +1,8 @@
-import {NavigationContainer} from '@react-navigation/native';
-import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import HomeScreen from './screens/HomeScreen';
-import {Text} from 'react-native';
-import Inbox from './screens/Inbox';
+import {NavigationContainer} from "@react-navigation/native";
+import {createNativeStackNavigator} from "@react-navigation/native-stack";
+import HomeScreen from "./screens/HomeScreen";
+import {Text} from "react-native";
+import Inbox from "./screens/Inbox";
 
 export type RootStackParamList = {
   Home: undefined;

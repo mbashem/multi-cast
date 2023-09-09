@@ -21,9 +21,11 @@
 	-> Use c++ for some components
 
 # features
--> Standard text messages between individuals and group
+-> Video streaming site where users in group can watch videos
 
--> Audio + video calls (including group calls)
+-> If one user pauses video will be paused for everyone
+
+-> They can share their camera
 
 # future
 -> Integrate ai chat bot

@@ -1,15 +1,15 @@
 import {faker} from '@faker-js/faker';
 
+// Chat List
 export const createRandomChat = () => {
   return {
     chatId: faker.string.uuid(),
     chatName: faker.internet.userName(),
-		chatAvatar: faker.image.avatar(),
-    userId: faker.string.uuid(),
+    chatAvatar: faker.image.avatar(),
     userName: faker.internet.userName(),
     userAvatar: faker.image.avatar(),
     lastMessage: faker.lorem.sentence(),
-		lastSent: faker.date.recent(),
+    lastSent: faker.date.recent(),
   };
 };
 
@@ -19,14 +19,16 @@ export const getRandomChats = (count: number) => {
   });
 };
 
+// Inbox messages
 export const createRandomMessage = (id: string) => {
   return {
     chatId: id,
-    userId: faker.string.uuid(),
-    username: faker.internet.userName(),
-    avatar: faker.image.avatar(),
+    userName: faker.internet.userName(),
+    userAvatar: faker.image.avatar(),
     message: faker.lorem.sentence(),
     sent: faker.date.recent(),
+    messageId: faker.string.uuid(),
+    type: 'text',
   };
 };
 
