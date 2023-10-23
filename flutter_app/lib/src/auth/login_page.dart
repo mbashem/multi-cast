@@ -17,7 +17,9 @@ class _LoginPageState extends State<LoginPage> {
     try {
       print("Calling");
       final account = await signInWithGoogle();
-      print(account);
+      print(account.user);
+      print(account.credential);
+      // print(account.credential?.accessToken);
       // Use account for user information, or proceed with Step 5.
     } catch (error) {
       print('Google Sign-In Error: $error');
