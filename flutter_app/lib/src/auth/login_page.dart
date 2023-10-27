@@ -1,4 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_app/utils/log_print.dart';
 import './auth_repository.dart';
 
 class LoginPage extends StatefulWidget {
@@ -11,12 +13,18 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-
   Future<void> _handleSignIn() async {
     print("handle sign in called");
     try {
       print("Calling");
       final account = await signInWithGoogle();
+      var tokenResult = await FirebaseAuth.instance.currentUser?.getIdToken();
+      debugPrint("Token:$tokenResult-END");
+      logPrint("tokenResult: $tokenResult-END");
+      // final idToken = await tokenResult.getIdToken();
+      // print(idToken);
+
+      // print(account.)
       print(account.user);
       print(account.credential);
       // print(account.credential?.accessToken);

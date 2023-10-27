@@ -1,3 +1,1 @@
-Create a .env file. Required properties
-- CLIENT_ID=<GOOGLE_OAUTH_CLIENT_ID>
-- CLIENT_SECRET=<GOOGLE_OAUTH_CLIENT_SECRET>
+Add firebase admin sdk to /src/main/resources as firebase_config.json file
