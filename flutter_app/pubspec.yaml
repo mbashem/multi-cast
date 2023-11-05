@@ -18,8 +18,13 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
+  flutter_webrtc: ^0.9.46
   google_sign_in: ^6.1.5
   http: ^1.1.0
+  logger: ^2.0.2+1
+  sdp_transform: ^0.3.2
+  shared_preferences: ^2.2.2
+  socket_io_client: ^2.0.3+1
 
 dev_dependencies:
   flutter_test:

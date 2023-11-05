@@ -1,7 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_app/utils/log_print.dart';
-import './auth_repository.dart';
+import 'auth_service.dart';
 
 class LoginPage extends StatefulWidget {
   static const routeName = '/login';
@@ -9,28 +8,24 @@ class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
   @override
+  // ignore: library_private_types_in_public_api
   _LoginPageState createState() => _LoginPageState();
 }
 
 class _LoginPageState extends State<LoginPage> {
   Future<void> _handleSignIn() async {
-    print("handle sign in called");
+    debugPrint("handle sign in called");
     try {
-      print("Calling");
-      final account = await signInWithGoogle();
-      var tokenResult = await FirebaseAuth.instance.currentUser?.getIdToken();
-      debugPrint("Token:$tokenResult-END");
-      logPrint("tokenResult: $tokenResult-END");
-      // final idToken = await tokenResult.getIdToken();
-      // print(idToken);
+      debugPrint("Calling");
+      var user = await AuthService.signInWithGoogle();
+      debugPrint("User:$user");
+      var idToken = await FirebaseAuth.instance.currentUser?.getIdToken();
 
-      // print(account.)
-      print(account.user);
-      print(account.credential);
-      // print(account.credential?.accessToken);
-      // Use account for user information, or proceed with Step 5.
+      var jwtToken = await AuthService.getJWTFromBackend(idToken);
+
+      debugPrint("Token:$jwtToken");
     } catch (error) {
-      print('Google Sign-In Error: $error');
+      debugPrint('Google Sign-In Error: $error');
     }
   }
 
@@ -38,12 +33,34 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Google Sign-In Demo'),
+        title: const Text('Register/Login'),
       ),
       body: Center(
-        child: ElevatedButton(
+        child: OutlinedButton(
+          style: ButtonStyle(
+            shape: MaterialStateProperty.all(RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30.0))),
+          ),
           onPressed: _handleSignIn,
-          child: const Text('Sign in with Google'),
+          child: Container(
+            width: 220,
+            height: 80,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Container(
+                    // decoration: BoxDecoration(color: Colors.blue),
+                    child: Image.network(
+                        'http://pngimg.com/uploads/google/google_PNG19635.png',
+                        fit: BoxFit.cover)),
+                SizedBox(
+                  width: 5.0,
+                ),
+                Text('Sign-in with Google')
+              ],
+            ),
+          ),
         ),
       ),
     );

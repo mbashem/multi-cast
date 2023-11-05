@@ -1,6 +1,6 @@
 void logPrint(Object object) async {
   int defaultPrintLength = 1020;
-  if (object == null || object.toString().length <= defaultPrintLength) {
+  if (object.toString().length <= defaultPrintLength) {
     print(object);
   } else {
     String log = object.toString();

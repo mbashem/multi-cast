@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/src/auth/login_page.dart';
+import 'package:flutter_app/src/home/home_page.dart';
+import 'package:flutter_app/src/meeting/meeting_page.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
@@ -60,8 +62,8 @@ class MyApp extends StatelessWidget {
           theme: ThemeData(),
           darkTheme: ThemeData.dark(),
           themeMode: settingsController.themeMode,
-
-          // Define a function to handle named routes in order to support
+          initialRoute: '/',
+          // Define a function to handle named routaaes in order to support
           // Flutter web url navigation and deep linking.
           onGenerateRoute: (RouteSettings routeSettings) {
             return MaterialPageRoute<void>(
@@ -70,6 +72,10 @@ class MyApp extends StatelessWidget {
                 switch (routeSettings.name) {
                   case LoginPage.routeName:
                     return const LoginPage();
+                  case HomePage.routeName:
+                    return const HomePage();
+                  case MeetingPage.routeName:
+                    return const MeetingPage();
                   case SettingsView.routeName:
                     return SettingsView(controller: settingsController);
                   case SampleItemDetailsView.routeName:
