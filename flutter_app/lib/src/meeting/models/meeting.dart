@@ -1,6 +1,6 @@
 class Meeting {
   final String id;
-  final String name;
+  final String hostId;
 
-  Meeting({required this.id, required this.name});
+  Meeting({required this.id, required this.hostId});
 }

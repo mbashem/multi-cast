@@ -1,12 +1,12 @@
 # Todo
--> Mobile_app
+-> Mobile_app (flutter)
 
--> Backend 
+-> Backend (spring boot)
 
 -> Electron-app (windows and ubuntu)(Undecided)
 
 # goals
--> Learn react native
+-> Learn flutter
 
 	-> Learn to use java and c++ in react native app
 
