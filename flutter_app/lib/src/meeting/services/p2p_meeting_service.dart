@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter_app/src/meeting/models/meeting_event.dart';
 import 'package:flutter_app/src/utils/logger.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:sdp_transform/sdp_transform.dart';
@@ -13,76 +14,30 @@ class P2PMeetingService {
   final localVideoRenderer = RTCVideoRenderer();
   final remoteVideoRenderer = RTCVideoRenderer();
   io.Socket? socket; // shared between P2PMeetingService
+  final String room;
+  final String name;
+  String? currSessionId;
+  String? remoteSessionId;
 
-  // P2PMeetingService(this.socket);
+  P2PMeetingService(
+      {required this.room,
+      required this.name,
+      this.currSessionId,
+      this.remoteSessionId});
 
-  void init(io.Socket socket) {
+  init(io.Socket socket) async {
     this.socket = socket;
-    initRenderers();
-    _createPeerConnection().then((pc) {
-      rtcConnection = pc;
-    });
-    connectToSocketServer();
+    await initRenderers();
+    rtcConnection = await _createPeerConnection();
   }
 
   void initOffer() {
     _createOffer();
   }
 
-  void connectToSocketServer() {
-    socket!.connect();
-    logger.i("Socket connecting");
-    socket!.onConnect((data) {
-      socket!.emit("joinRoom", "42");
-    });
-    socket!.on('offer', (data) async {
-      var signalingState = rtcConnection!.signalingState;
-      if (signalingState != RTCSignalingState.RTCSignalingStateHaveLocalOffer &&
-          signalingState !=
-              RTCSignalingState.RTCSignalingStateHaveRemoteOffer) {
-        data = json.decode(data);
-        // logger.i(data);
-        String sdp = write(data, null);
-
-        RTCSessionDescription description = RTCSessionDescription(sdp, 'offer');
-
-        // print(description.toMap());
-        logger.i("Offer: $signalingState");
-        await rtcConnection!.setRemoteDescription(description);
-        _createAnswer();
-      }
-    });
-    socket!.on('answer', (data) async {
-      var signalingState = rtcConnection!.signalingState;
-      if (signalingState !=
-              RTCSignalingState.RTCSignalingStateHaveRemoteOffer &&
-          signalingState !=
-              RTCSignalingState.RTCSignalingStateHaveRemotePrAnswer) {
-        data = json.decode(data);
-        String sdp = write(data, null);
-
-        RTCSessionDescription description =
-            RTCSessionDescription(sdp, 'answer');
-
-        logger.i("answer: $signalingState");
-        await rtcConnection!.setRemoteDescription(description);
-        logger.i(sdp);
-
-        socket!.emit(candidate);
-        sentCandidate = true;
-      }
-    });
-    socket!.on('candidate', (session) async {
-      if (!sentCandidate) {
-        logger.i(session);
-        dynamic candidate = RTCIceCandidate(
-            session['candidate'], session['sdpMid'], session['sdpMLineIndex']);
-        await rtcConnection!.addCandidate(candidate);
-      }
-    });
-    socket!.on('chat_message', (data) {
-      logger.i(data);
-    });
+  _createMsg(String msg) {
+    return MeetingEvent(
+        room: room, msg: msg, sender: currSessionId, to: remoteSessionId);
   }
 
   _createPeerConnection() async {
@@ -110,15 +65,11 @@ class P2PMeetingService {
       if (e.candidate != null) {
         candidate = json.encode({
           'candidate': e.candidate.toString(),
-          'sdpMid': e.sdpMid.toString(),
+          'sdpMid': e.sdpMid,
           'sdpMLineIndex': e.sdpMLineIndex,
         });
         print(candidate);
       }
-    };
-
-    pc.onIceConnectionState = (e) {
-      // print(e);
     };
 
     pc.onAddStream = (stream) {
@@ -162,21 +113,76 @@ class P2PMeetingService {
     }
   }
 
+  void addCandidate(MeetingEvent data) async {
+    if (!sentCandidate) {
+      var session = json.decode(data.msg!);
+      logger.i(session);
+      String currCandidate = session['candidate'];
+      String currSDPMid = session['sdpMid'];
+      int currSDPMLineIndex = session['sdpMLineIndex'];
+      dynamic candidate =
+          RTCIceCandidate(currCandidate, currSDPMid, currSDPMLineIndex);
+      await rtcConnection!.addCandidate(candidate);
+    }
+  }
+
+  void addAnswer(MeetingEvent data) async {
+    var signalingState = rtcConnection!.signalingState;
+    if (signalingState != RTCSignalingState.RTCSignalingStateHaveRemoteOffer &&
+        signalingState !=
+            RTCSignalingState.RTCSignalingStateHaveRemotePrAnswer) {
+      var sdpParsed = parse(data.msg!);
+      String sdp = write(sdpParsed, null);
+
+      RTCSessionDescription description = RTCSessionDescription(sdp, 'answer');
+
+      logger.i("answer: $signalingState");
+      await rtcConnection!.setRemoteDescription(description);
+      logger.i(sdp);
+
+      socket!.emit("candidate", _createMsg(candidate));
+      sentCandidate = true;
+    }
+  }
+
+  void addOffer(MeetingEvent data) async {
+    var signalingState = rtcConnection!.signalingState;
+    if (signalingState != RTCSignalingState.RTCSignalingStateHaveLocalOffer &&
+        signalingState != RTCSignalingState.RTCSignalingStateHaveRemoteOffer) {
+      var sdpParsed = parse(data.msg!);
+      // logger.i(data);
+      String sdp = write(sdpParsed, null);
+
+      RTCSessionDescription description = RTCSessionDescription(sdp, 'offer');
+
+      // print(description.toMap());
+      logger.i("Offer: $signalingState");
+      await rtcConnection!.setRemoteDescription(description);
+      _createAnswer();
+    }
+  }
+
   void _createOffer() async {
+    if (currSessionId == null || remoteSessionId == null) {
+      return;
+    }
     RTCSessionDescription description =
         await rtcConnection!.createOffer({'offerToReceiveVideo': 1});
-    var session = parse(description.sdp!);
+    // var session = parse(description.sdp!);
     // print(json.encode(session));
-    socket!.emit('offer', {'room': "42", 'sdp': json.encode(session)});
+    socket!.emit('offer', _createMsg(description.sdp!));
 
     await rtcConnection!.setLocalDescription(description);
   }
 
   void _createAnswer() async {
+    if (currSessionId == null || remoteSessionId == null) {
+      return;
+    }
     RTCSessionDescription description =
         await rtcConnection!.createAnswer({'offerToReceiveVideo': 1});
-    var session = parse(description.sdp!);
-    socket!.emit("answer", {'room': "42", 'sdp': json.encode(session)});
+    // var session = parse(description.sdp!);
+    socket!.emit("answer", _createMsg(description.sdp!));
     // print(json.encode(session));
 
     rtcConnection!.setLocalDescription(description);

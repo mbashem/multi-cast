@@ -1,4 +1,6 @@
 // ignore: constant_identifier_names
-const baseURL = "http://10.0.2.2:8080";
+import 'package:flutter/foundation.dart';
+
+const baseURL = (kIsWeb ? "http://localhost:8080" : "http://10.0.2.2:8080");
 const apiURL = "$baseURL/api";
-const socketURL = "http://localhost:8000";
+const socketURL = (kIsWeb ? "http://localhost:8000" : "http://10.0.2.2:8000");

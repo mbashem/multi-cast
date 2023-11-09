@@ -7,9 +7,7 @@ import com.corundumstudio.socketio.annotation.OnConnect;
 import com.corundumstudio.socketio.annotation.OnDisconnect;
 import com.corundumstudio.socketio.annotation.OnEvent;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
@@ -21,6 +19,7 @@ public class SocketIOController {
     private final SocketIOServer server;
     private static final Map<String, String> users = new HashMap<>();
     private static final Map<String, String> rooms = new HashMap<>();
+    private static final Map<String, HashSet<String>> participants = new HashMap<>();
 
     public SocketIOController(SocketIOServer server) {
         this.server = server;
@@ -32,39 +31,50 @@ public class SocketIOController {
     public void onConnect(SocketIOClient client) {
         log.info("Client connected: " + client.getSessionId());
         String clientId = client.getSessionId().toString();
+        client.getNamespace().getClient(client.getSessionId()).sendEvent("userInfo",
+                MeetingEvent.builder().msg(clientId).sender("Server").to(clientId).build());
         users.put(clientId, null);
     }
 
     @OnDisconnect
     public void onDisconnect(SocketIOClient client) {
         String clientId = client.getSessionId().toString();
-        String room = users.get(clientId);
+        String room = rooms.get(clientId);
         if (!Objects.isNull(room)) {
             log.info("Client disconnected: {} from : {}", clientId, room);
             users.remove(clientId);
-            client.getNamespace().getRoomOperations(room).sendEvent("userDisconnected", clientId);
+            client.getNamespace().getRoomOperations(room).sendEvent("userDisconnected",
+                    MeetingEvent.builder().sender(clientId).build());
         }
         printLog("onDisconnect", client, room);
     }
 
+    /**
+     * msg will contain name
+     */
     @OnEvent("joinRoom")
-    public void onJoinRoom(SocketIOClient client, String room) {
-        int connectedClients = server.getRoomOperations(room).getClients().size();
-        if (connectedClients == 0) {
-            client.joinRoom(room);
-            client.sendEvent("created", room);
-            users.put(client.getSessionId().toString(), room);
-            rooms.put(room, client.getSessionId().toString());
-        } else if (connectedClients == 1) {
-            client.joinRoom(room);
-            client.sendEvent("joined", room);
-            users.put(client.getSessionId().toString(), room);
-            client.sendEvent("setCaller", rooms.get(room));
-        } else {
-            client.joinRoom(room);
-        }
-        client.getNamespace().getRoomOperations(room).sendEvent("newUser", client.getSessionId());
-        printLog("onReady", client, room);
+    public void onJoinRoom(SocketIOClient client, MeetingEvent meetingEvent) {
+        var room = meetingEvent.getRoom();
+        var name = meetingEvent.getMsg();
+        var currClientSessionId = client.getSessionId().toString();
+        users.put(currClientSessionId, name);
+        rooms.put(currClientSessionId, room);
+        var clients = server.getRoomOperations(room).getClients();
+        clients.forEach((prv) -> {
+            var prvClientSessionId = prv.getSessionId().toString();
+            log.info(prvClientSessionId);
+            client.getNamespace().getClient(prv.getSessionId())
+                    .sendEvent("newUser",
+                            MeetingEvent.builder().msg(name).sender(currClientSessionId)
+                                    .to(prvClientSessionId).build());
+
+            client.getNamespace().getClient(client.getSessionId())
+                    .sendEvent("prvUser", MeetingEvent.builder()
+                            .msg(users.get(prvClientSessionId)).to(currClientSessionId)
+                            .sender(prvClientSessionId).build());
+        });
+        client.joinRoom(room);
+        printLog("joinRoom", client, room);
     }
 
     @OnEvent("ready")
@@ -74,33 +84,27 @@ public class SocketIOController {
     }
 
     @OnEvent("candidate")
-    public void onCandidate(SocketIOClient client, Map<String, Object> payload) {
-        String room = (String) payload.get("room");
-        client.getNamespace().getRoomOperations(room).sendEvent("candidate", payload);
+    public void onCandidate(SocketIOClient client, MeetingEvent meetingEvent) {
+        var room = meetingEvent.room;
+        client.getNamespace().getClient(UUID.fromString(meetingEvent.getTo()))
+                .sendEvent("candidate", meetingEvent);
         printLog("onCandidate", client, room);
     }
 
     @OnEvent("offer")
-    public void onOffer(SocketIOClient client, Map<String, Object> payload) {
-        String room = (String) payload.get("room");
-        Object sdp = payload.get("sdp");
-//        log.info((String) sdp);
-        client.getNamespace().getRoomOperations(room).sendEvent("offer", sdp);
+    public void onOffer(SocketIOClient client, MeetingEvent meetingEvent) {
+        var room = meetingEvent.room;
+        client.getNamespace().getClient(UUID.fromString(meetingEvent.getTo()))
+                .sendEvent("offer", meetingEvent);
         printLog("onOffer", client, room);
     }
 
     @OnEvent("answer")
-    public void onAnswer(SocketIOClient client, Map<String, Object> payload) {
-        String room = (String) payload.get("room");
-        Object sdp = payload.get("sdp");
-        client.getNamespace().getRoomOperations(room).sendEvent("answer", sdp);
+    public void onAnswer(SocketIOClient client, MeetingEvent meetingEvent) {
+        var room = meetingEvent.room;
+        client.getNamespace().getClient(UUID.fromString(meetingEvent.getTo()))
+                .sendEvent("answer", meetingEvent);
         printLog("onAnswer", client, room);
-    }
-
-    @OnEvent("leaveRoom")
-    public void onLeaveRoom(SocketIOClient client, String room) {
-        client.leaveRoom(room);
-        printLog("onLeaveRoom", client, room);
     }
 
     private static void printLog(String header, SocketIOClient client, String room) {
