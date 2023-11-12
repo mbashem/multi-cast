@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/src/meeting/services/p2p_meeting_service.dart';
+import 'package:flutter_app/src/meeting/video_overlay.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 class MeetingWidget extends StatelessWidget {
@@ -17,44 +18,19 @@ class MeetingWidget extends StatelessWidget {
     // p2pMeetingService.init();
   }
 
-  SizedBox videoRenderers() => SizedBox(
-        height: 210,
-        child: Stack(
-          children: [
-            // Video view
-            Flexible(
-              child: Container(
-                key: const Key('remote'),
-                margin: const EdgeInsets.fromLTRB(5.0, 5.0, 5.0, 5.0),
-                decoration: const BoxDecoration(color: Colors.black),
-                child: RTCVideoView(p2pMeetingService.remoteVideoRenderer),
-              ),
-            ),
-            // Overlay text
-            Positioned(
-              top: 10.0,
-              left: 10.0,
-              child: Text(
-                userId,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18.0,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-
   @override
   Widget build(BuildContext context) {
     return Container(
         alignment: Alignment.center,
-        child: Column(
-          children: [
-            videoRenderers(),
-          ],
-        ));
+        child: SizedBox(
+            height: 210,
+            // child: Flexible(
+            child: VideoOverlay(
+                videoRenderer: p2pMeetingService.remoteVideoRenderer,
+                userName: name,
+                isMicMuted: false,
+                isCameraMuted: false)
+            // ),
+            ));
   }
 }

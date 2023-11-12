@@ -107,6 +107,13 @@ public class SocketIOController {
         printLog("onAnswer", client, room);
     }
 
+    @OnEvent("chatMessage")
+    public void onMessage(SocketIOClient client, MeetingEvent meetingEvent) {
+        var room = meetingEvent.room;
+        client.getNamespace().getRoomOperations(room).sendEvent("chatMessage", meetingEvent);
+        printLog("onChatMessage", client, room);
+    }
+
     private static void printLog(String header, SocketIOClient client, String room) {
         if (room == null) return;
         int size = 0;

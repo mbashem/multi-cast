@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_app/src/meeting/meeting_control_panel.dart';
 import 'package:flutter_app/src/meeting/meeting_widget.dart';
 import 'package:flutter_app/src/meeting/models/meeting_event.dart';
 import 'package:flutter_app/src/meeting/services/p2p_meeting_service.dart';
+import 'package:flutter_app/src/meeting/video_overlay.dart';
 import 'package:flutter_app/src/utils/logger.dart';
 import 'package:flutter_app/src/utils/random.dart';
 import 'package:flutter_app/src/utils/urls.dart';
@@ -28,13 +30,11 @@ class _MeetingPageState extends State<MeetingPage> {
   final List<MeetingWidget> meetingWidgets = [];
   P2PMeetingService p2pMeetingService = P2PMeetingService(
     room: "42",
-    name: getRandomString(5),
   );
 
   _createMeetingWidget(MeetingEvent data) async {
     var currP2PMeetingService = P2PMeetingService(
       room: room,
-      name: getRandomString(5),
       currSessionId: data.to,
       remoteSessionId: data.sender,
     );
@@ -135,37 +135,15 @@ class _MeetingPageState extends State<MeetingPage> {
     });
   }
 
-  Row offerAndAnswerButtons() => Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          ElevatedButton(
-            onPressed: () {
-              p2pMeetingService.initOffer();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.black,
-              foregroundColor: Colors.amber,
-              elevation: 20, // Elevation
-              shadowColor: Colors.amber, // Shadow Color
-            ),
-            child: const Text('Offer'),
-          ),
-        ],
-      );
-
   SizedBox videoRenderers() => SizedBox(
-        height: 210,
-        child: Row(children: [
-          Flexible(
-              child: Container(
-            key: const Key('local'),
-            margin: const EdgeInsets.fromLTRB(5.0, 5.0, 5.0, 5.0),
-            decoration: const BoxDecoration(color: Colors.black),
-            child: RTCVideoView(p2pMeetingService.localVideoRenderer,
-                mirror: true),
-          )),
-        ]),
-      );
+      height: 210,
+      child: VideoOverlay(
+        isCameraMuted: false,
+        isMicMuted: false,
+        videoRenderer: p2pMeetingService.localVideoRenderer,
+        userName: name,
+        mirror: true,
+      ));
 
   @override
   Widget build(BuildContext context) {
@@ -177,9 +155,7 @@ class _MeetingPageState extends State<MeetingPage> {
           alignment: Alignment.center,
           child: Column(
             children: [
-              offerAndAnswerButtons(),
               videoRenderers(),
-              Text("SessionID: $sessionId"),
               Flexible(
                 child: ListView.builder(
                   itemCount: meetingWidgets.length,
@@ -188,6 +164,23 @@ class _MeetingPageState extends State<MeetingPage> {
                   },
                 ),
               ),
+              MeetingControlPanel(
+                  onToggleAudio: () {
+                    // p2pMeetingService.toggleMic();
+
+                    // for (var element in meetingWidgets) {
+                    //   element.p2pMeetingService.toggleMic();
+                    // }
+                  },
+                  onToggleVideo: () {
+                    p2pMeetingService.toggleCamera();
+
+                    for (var element in meetingWidgets) {
+                      element.p2pMeetingService.toggleCamera();
+                    }
+                  },
+                  onToggleScreenShare: () {},
+                  onHangUp: () {})
             ],
           )),
     );

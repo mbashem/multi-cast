@@ -6,5 +6,4 @@ import org.springframework.stereotype.Service;
 public class MeetingServices {
     // start meeting ()
     // join meeting (meetingId)
-    // send message (meetingId, message)
 }

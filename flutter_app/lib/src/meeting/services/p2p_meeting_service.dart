@@ -9,21 +9,20 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 class P2PMeetingService {
   RTCPeerConnection? rtcConnection;
   MediaStream? localMediaStream;
-  dynamic candidate;
   bool sentCandidate = false;
   final localVideoRenderer = RTCVideoRenderer();
   final remoteVideoRenderer = RTCVideoRenderer();
   io.Socket? socket; // shared between P2PMeetingService
   final String room;
-  final String name;
   String? currSessionId;
   String? remoteSessionId;
+  bool _isCameraOn = true;
+  bool _isMicOn = false;
+  bool answerEmited = false;
+  List<MeetingEvent> candidateQueue = [];
 
   P2PMeetingService(
-      {required this.room,
-      required this.name,
-      this.currSessionId,
-      this.remoteSessionId});
+      {required this.room, this.currSessionId, this.remoteSessionId});
 
   init(io.Socket socket) async {
     this.socket = socket;
@@ -63,11 +62,13 @@ class P2PMeetingService {
 
     pc.onIceCandidate = (e) {
       if (e.candidate != null) {
-        candidate = json.encode({
+        var candidate = json.encode({
           'candidate': e.candidate.toString(),
           'sdpMid': e.sdpMid,
           'sdpMLineIndex': e.sdpMLineIndex,
         });
+        socket!.emit("candidate", _createMsg(candidate));
+        sentCandidate = true;
         print(candidate);
       }
     };
@@ -93,10 +94,10 @@ class P2PMeetingService {
 
   _getUserMedia() async {
     final Map<String, dynamic> constraints = {
-      'audio': false,
+      'audio': _isMicOn,
       'video': {
         'facingMode': 'user',
-      }
+      },
     };
 
     try {
@@ -113,16 +114,44 @@ class P2PMeetingService {
     }
   }
 
-  void addCandidate(MeetingEvent data) async {
-    if (!sentCandidate) {
-      var session = json.decode(data.msg!);
-      logger.i(session);
-      String currCandidate = session['candidate'];
-      String currSDPMid = session['sdpMid'];
-      int currSDPMLineIndex = session['sdpMLineIndex'];
-      dynamic candidate =
-          RTCIceCandidate(currCandidate, currSDPMid, currSDPMLineIndex);
-      await rtcConnection!.addCandidate(candidate);
+  void toggleMic() async {
+    _isMicOn = !_isMicOn;
+    localMediaStream!.getAudioTracks().forEach((track) {
+      track.enabled = _isMicOn;
+    });
+  }
+
+  void toggleCamera() async {
+    _isCameraOn = !_isCameraOn;
+    localMediaStream!.getVideoTracks().forEach((track) {
+      track.enabled = _isCameraOn;
+    });
+  }
+
+  _addCandidateToRTC(MeetingEvent data) async {
+    var session = json.decode(data.msg!);
+    logger.i(session);
+    String currCandidate = session['candidate'];
+    String currSDPMid = session['sdpMid'];
+    int currSDPMLineIndex = session['sdpMLineIndex'];
+    dynamic candidate =
+        RTCIceCandidate(currCandidate, currSDPMid, currSDPMLineIndex);
+    await rtcConnection!.addCandidate(candidate);
+  }
+
+  addCandidate(MeetingEvent data) async {
+    if (answerEmited) {
+      await _addCandidateToRTC(data);
+    } else {
+      candidateQueue.add(data);
+    }
+  }
+
+  applyCandidate() async {
+    while (candidateQueue.isNotEmpty) {
+      var data = candidateQueue.last;
+      await _addCandidateToRTC(data);
+      candidateQueue.removeLast();
     }
   }
 
@@ -139,9 +168,8 @@ class P2PMeetingService {
       logger.i("answer: $signalingState");
       await rtcConnection!.setRemoteDescription(description);
       logger.i(sdp);
-
-      socket!.emit("candidate", _createMsg(candidate));
-      sentCandidate = true;
+      answerEmited = true;
+      await applyCandidate();
     }
   }
 
@@ -185,6 +213,9 @@ class P2PMeetingService {
     socket!.emit("answer", _createMsg(description.sdp!));
     // print(json.encode(session));
 
-    rtcConnection!.setLocalDescription(description);
+    await rtcConnection!.setLocalDescription(description);
+
+    answerEmited = true;
+    applyCandidate();
   }
 }
