@@ -69,13 +69,20 @@ class MyApp extends StatelessWidget {
             return MaterialPageRoute<void>(
               settings: routeSettings,
               builder: (BuildContext context) {
+                final List<String> pathSegments =
+                    routeSettings.name!.split('/');
+                if (pathSegments[1] == 'meeting' && pathSegments.length == 3) {
+                  // Extract the meetingId from the path
+                  final String meetingId = pathSegments[2];
+                  print("Meeting ID: $meetingId");
+                  return MeetingPage(meetingId: meetingId);
+                }
+
                 switch (routeSettings.name) {
                   case LoginPage.routeName:
                     return const LoginPage();
                   case HomePage.routeName:
                     return const HomePage();
-                  case MeetingPage.routeName:
-                    return const MeetingPage();
                   case SettingsView.routeName:
                     return SettingsView(controller: settingsController);
                   case SampleItemDetailsView.routeName:

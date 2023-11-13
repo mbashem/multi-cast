@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/src/meeting/meeting_page.dart';
+import 'package:flutter_app/src/meeting/services/meeting_api_service.dart';
 import 'package:flutter_app/src/settings/settings_view.dart';
 
 class HomePage extends StatefulWidget {
@@ -58,11 +59,19 @@ class _MyFormState extends State<MyForm> {
   static final globalKey = GlobalKey<FormState>();
   final TextEditingController _textController = TextEditingController();
 
-  void _submit() {
+  void _startMeeting() async {
+    var response = await MeetingApiService.createMeeting();
+    if (response != null) {
+      Navigator.pushNamed(context, MeetingPage.routeName + "/${response.id}");
+    }
+  }
+
+  void _joinMeeting() {
     String text = _textController.text;
     // Perform the submission action with the entered text
     print('Submitted: $text');
-    Navigator.pushNamed(context, MeetingPage.routeName);
+
+    Navigator.pushNamed(context, MeetingPage.routeName + "/$text");
   }
 
   @override
@@ -90,7 +99,7 @@ class _MyFormState extends State<MyForm> {
                   SizedBox(
                     height: 56, // Set the desired height here
                     child: ElevatedButton(
-                      onPressed: _submit,
+                      onPressed: _joinMeeting,
                       child: Text('Join Meeting'),
                     ),
                   ),
@@ -102,7 +111,7 @@ class _MyFormState extends State<MyForm> {
               Container(
                   height: 56, // Set the desired height here
                   child: ElevatedButton(
-                    onPressed: _submit,
+                    onPressed: _startMeeting,
                     child: Text('Start a Meeting'),
                   ))
             ],

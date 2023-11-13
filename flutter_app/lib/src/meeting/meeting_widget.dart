@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/src/meeting/services/p2p_meeting_service.dart';
 import 'package:flutter_app/src/meeting/video_overlay.dart';
-import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 class MeetingWidget extends StatelessWidget {
   final String userId;
@@ -13,10 +12,6 @@ class MeetingWidget extends StatelessWidget {
       required this.userId,
       required this.name,
       required this.p2pMeetingService});
-
-  void initState() {
-    // p2pMeetingService.init();
-  }
 
   @override
   Widget build(BuildContext context) {

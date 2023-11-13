@@ -9,4 +9,5 @@ import lombok.Data;
 @AllArgsConstructor
 public class CreateMeetingResponse {
     String MeetingId;
+    Integer hostId;
 }

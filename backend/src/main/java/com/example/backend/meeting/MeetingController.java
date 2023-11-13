@@ -11,11 +11,12 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/public")
 public class MeetingController {
+    @CrossOrigin(origins = "*")
     @GetMapping("/create-meeting")
     public ResponseEntity<CreateMeetingResponse> createMeeting() {
         var meetingId = UUID.randomUUID().toString();
 
-        return ResponseEntity.ok(CreateMeetingResponse.builder().MeetingId(meetingId).build());
+        return ResponseEntity.ok(CreateMeetingResponse.builder().MeetingId(meetingId).hostId(42).build());
     }
 
     @GetMapping("/join-meeting")

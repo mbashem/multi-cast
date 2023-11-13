@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_app/src/meeting/chat_widget.dart';
 import 'package:flutter_app/src/meeting/meeting_control_panel.dart';
 import 'package:flutter_app/src/meeting/meeting_widget.dart';
+import 'package:flutter_app/src/meeting/models/chat_message.dart';
 import 'package:flutter_app/src/meeting/models/meeting_event.dart';
 import 'package:flutter_app/src/meeting/services/p2p_meeting_service.dart';
 import 'package:flutter_app/src/meeting/video_overlay.dart';
 import 'package:flutter_app/src/utils/logger.dart';
 import 'package:flutter_app/src/utils/random.dart';
 import 'package:flutter_app/src/utils/urls.dart';
-import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 
 class MeetingPage extends StatefulWidget {
   static const routeName = '/meeting';
+  final String meetingId;
 
-  const MeetingPage({super.key});
+  const MeetingPage({super.key, required this.meetingId});
 
   @override
   State<MeetingPage> createState() => _MeetingPageState();
@@ -25,21 +27,23 @@ class _MeetingPageState extends State<MeetingPage> {
     'autoConnect': false,
   });
   String sessionId = "";
-  final room = "42";
   final name = getRandomString(5);
+  final List<ChatMessage> messages = [];
   final List<MeetingWidget> meetingWidgets = [];
   P2PMeetingService p2pMeetingService = P2PMeetingService(
     room: "42",
   );
+  final Map<String, String> userName = {};
 
   _createMeetingWidget(MeetingEvent data) async {
     var currP2PMeetingService = P2PMeetingService(
-      room: room,
+      room: widget.meetingId,
       currSessionId: data.to,
       remoteSessionId: data.sender,
     );
 
     await currP2PMeetingService.init(socket);
+    userName[data.sender!] = data.msg!;
 
     var meetingWidget = MeetingWidget(
         name: data.msg!,
@@ -52,11 +56,14 @@ class _MeetingPageState extends State<MeetingPage> {
   @override
   void initState() {
     super.initState();
+    setState(() {
+      userName[sessionId] = name;
+    });
     p2pMeetingService.init(socket);
     socket.connect();
 
     socket.onConnect((data) {
-      socket.emit("joinRoom", MeetingEvent(room: room, msg: name));
+      socket.emit("joinRoom", MeetingEvent(room: widget.meetingId, msg: name));
     });
 
     socket.on("newUser", (data) async {
@@ -93,18 +100,14 @@ class _MeetingPageState extends State<MeetingPage> {
     });
 
     socket.on("userInfo", (data) {
-      logger.i("userInfo");
       data = MeetingEvent.fromJson(data);
       setState(() {
         sessionId = data.msg!;
-        logger.i(sessionId);
       });
-      logger.i(data);
     });
 
     socket.on('offer', (data) async {
       data = MeetingEvent.fromJson(data);
-      logger.i(data);
       for (var element in meetingWidgets) {
         if (element.userId == data.sender) {
           element.p2pMeetingService.addOffer(data);
@@ -130,26 +133,37 @@ class _MeetingPageState extends State<MeetingPage> {
       }
     });
 
-    socket.on('chat_message', (data) {
-      logger.i(data);
+    socket.on('chatMessage', (data) {
+      var recievedChat = MeetingEvent.fromJson(data);
+      print(recievedChat);
+      setState(() {
+        messages.add(ChatMessage(
+            msg: recievedChat.msg!,
+            senderName: userName[recievedChat.sender!] ?? "Unknown"));
+      });
     });
   }
 
   SizedBox videoRenderers() => SizedBox(
-      height: 210,
-      child: VideoOverlay(
-        isCameraMuted: false,
-        isMicMuted: false,
-        videoRenderer: p2pMeetingService.localVideoRenderer,
-        userName: name,
-        mirror: true,
-      ));
+        height: 210,
+        child: Stack(
+          children: [
+            VideoOverlay(
+              isCameraMuted: false,
+              isMicMuted: false,
+              videoRenderer: p2pMeetingService.localVideoRenderer,
+              userName: name,
+              mirror: true,
+            ),
+          ],
+        ),
+      );
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Meeting $sessionId'),
+        title: Text('Meeting ${widget.meetingId}'),
       ),
       body: Container(
           alignment: Alignment.center,
@@ -165,24 +179,39 @@ class _MeetingPageState extends State<MeetingPage> {
                 ),
               ),
               MeetingControlPanel(
-                  onToggleAudio: () {
-                    // p2pMeetingService.toggleMic();
+                onToggleAudio: () {
+                  p2pMeetingService.toggleMic();
 
-                    // for (var element in meetingWidgets) {
-                    //   element.p2pMeetingService.toggleMic();
-                    // }
-                  },
-                  onToggleVideo: () {
-                    p2pMeetingService.toggleCamera();
+                  for (var element in meetingWidgets) {
+                    element.p2pMeetingService.toggleMic();
+                  }
+                },
+                onToggleVideo: () {
+                  p2pMeetingService.toggleCamera();
 
-                    for (var element in meetingWidgets) {
-                      element.p2pMeetingService.toggleCamera();
-                    }
-                  },
-                  onToggleScreenShare: () {},
-                  onHangUp: () {})
+                  for (var element in meetingWidgets) {
+                    element.p2pMeetingService.toggleCamera();
+                  }
+                },
+                onToggleScreenShare: () {},
+                onHangUp: () {},
+              )
             ],
           )),
+      endDrawer: Drawer(
+          child: ChatWidget(
+        messages: messages,
+        sendMessage: (String message) {
+          logger.i(message);
+          socket.emit(
+              "chatMessage",
+              MeetingEvent(
+                room: widget.meetingId,
+                msg: message,
+                sender: sessionId,
+              ));
+        },
+      )),
     );
   }
 }

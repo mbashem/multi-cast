@@ -1,15 +1,36 @@
-import 'package:flutter_app/src/utils/logger.dart';
 import 'package:flutter_app/src/utils/urls.dart';
-import 'package:socket_io_client/socket_io_client.dart' as io;
+import 'dart:convert';
+
+import 'package:flutter_app/src/meeting/models/meeting.dart';
+import 'package:http/http.dart' as http;
 
 class MeetingApiService {
-  io.Socket socket = io.io(socketURL, <String, dynamic>{
-    'transports': ['websocket'],
-    'autoConnect': false,
-  });
+  static Future<Meeting?> createMeeting() async {
+    try {
+      var requestHeaders = {
+        'Content-Type': 'application/json',
+        // "Access-Control-Allow-Origin": "*"
+      };
 
-  MeetingApiService() {
-    socket.connect();
-    socket.onConnect((data) => logger.i('connected'));
+      var response = await http.get(Uri.parse("$apiURL/public/create-meeting"),
+          headers: requestHeaders);
+
+      if (response.statusCode == 200) {
+        // Parse the response body as JSON
+        Map<String, dynamic> responseData = json.decode(response.body);
+
+        // Extract the "meetingId" field
+        String meetingId = responseData['meetingId'];
+        int hostId = responseData["hostId"];
+
+        return Meeting(id: meetingId, hostId: hostId);
+      } else {
+        return null;
+      }
+    } catch (e) {
+      print(e);
+      // Handle any JSON parsing errors
+      return null;
+    }
   }
 }

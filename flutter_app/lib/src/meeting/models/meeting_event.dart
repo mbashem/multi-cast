@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 class MeetingEvent {
   String? room;
   String? msg;
