@@ -8,16 +8,12 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 
 class P2PMeetingService {
   RTCPeerConnection? rtcConnection;
-  MediaStream? localMediaStream;
   bool sentCandidate = false;
-  final localVideoRenderer = RTCVideoRenderer();
   final remoteVideoRenderer = RTCVideoRenderer();
   io.Socket? socket; // shared between P2PMeetingService
   final String room;
   String? currSessionId;
   String? remoteSessionId;
-  bool _isCameraOn = true;
-  bool _isMicOn = false;
   bool answerEmited = false;
   List<MeetingEvent> candidateQueue = [];
 
@@ -54,11 +50,10 @@ class P2PMeetingService {
       'optional': [],
     };
 
-    localMediaStream = await _getUserMedia();
+    // await _getUserMedia();
 
     RTCPeerConnection pc =
         await createPeerConnection(configuration, offerSdpConstraints);
-    pc.addStream(localMediaStream!);
 
     pc.onIceCandidate = (e) {
       if (e.candidate != null) {
@@ -74,59 +69,41 @@ class P2PMeetingService {
     };
 
     pc.onAddStream = (stream) {
-      // print('addStream: ' + stream.id);
+      print('addStream: ' + stream.id);
       remoteVideoRenderer.srcObject = stream;
     };
 
     return pc;
   }
 
+  closeConnection() {
+    rtcConnection!.close();
+    rtcConnection = null;
+  }
+
+  removeStream(MediaStream? stream) async {
+    if (stream != null) {
+      await rtcConnection!.removeStream(stream);
+    }
+  }
+
+  addStream(MediaStream stream) async {
+    await rtcConnection!.addStream(stream);
+  }
+
   initRenderers() async {
-    await localVideoRenderer.initialize();
     await remoteVideoRenderer.initialize();
   }
 
   void dispose() {
-    localVideoRenderer.dispose();
     remoteVideoRenderer.dispose();
-    socket!.dispose();
-  }
-
-  _getUserMedia() async {
-    final Map<String, dynamic> constraints = {
-      'audio': _isMicOn,
-      'video': {
-        'facingMode': 'user',
-      },
-    };
-
-    try {
-      MediaStream stream =
-          await navigator.mediaDevices.getUserMedia(constraints);
-      localVideoRenderer.srcObject = stream;
-      return stream;
-    } catch (e) {
-      // Handle the error or absence of user media.
-      print("Failed to get user media: $e");
-      // You can display a message to the user or take appropriate action.
-      // For example, show an error message or provide alternative options.
-      return null;
-    }
   }
 
   void toggleMic() async {
-    _isMicOn = !_isMicOn;
-    localMediaStream!.getAudioTracks().forEach((track) {
-      track.enabled = _isMicOn;
-    });
+    
   }
 
-  void toggleCamera() async {
-    _isCameraOn = !_isCameraOn;
-    localMediaStream!.getVideoTracks().forEach((track) {
-      track.enabled = _isCameraOn;
-    });
-  }
+  void toggleCamera() async {}
 
   _addCandidateToRTC(MeetingEvent data) async {
     var session = json.decode(data.msg!);

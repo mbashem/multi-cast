@@ -5,10 +5,7 @@ import com.google.firebase.auth.FirebaseAuthException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @AllArgsConstructor
 @RestController
@@ -16,6 +13,8 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class AuthController {
     final AuthService authService;
+
+    @CrossOrigin(origins = "*")
 
     @PostMapping("/google-signin")
     public ResponseEntity<JWTAuthResponse> signin(@RequestBody GoogleSigninRequest signin) {

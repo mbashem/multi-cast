@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/src/meeting/services/p2p_meeting_service.dart';
-import 'package:flutter_app/src/meeting/video_overlay.dart';
+import 'package:flutter_app/src/meeting/meeting_video_widget.dart';
 
 class MeetingWidget extends StatelessWidget {
   final String userId;
@@ -15,17 +15,10 @@ class MeetingWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-        alignment: Alignment.center,
-        child: SizedBox(
-            height: 210,
-            // child: Flexible(
-            child: VideoOverlay(
-                videoRenderer: p2pMeetingService.remoteVideoRenderer,
-                userName: name,
-                isMicMuted: false,
-                isCameraMuted: false)
-            // ),
-            ));
+    return MeetingVideoWidget(
+        videoRenderer: p2pMeetingService.remoteVideoRenderer,
+        userName: name,
+        isMicMuted: false,
+        isCameraMuted: false);
   }
 }

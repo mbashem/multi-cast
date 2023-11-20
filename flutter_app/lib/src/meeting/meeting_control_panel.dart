@@ -3,14 +3,12 @@ import 'package:flutter/material.dart';
 class MeetingControlPanel extends StatefulWidget {
   final VoidCallback onToggleAudio;
   final VoidCallback onToggleVideo;
-  final VoidCallback onToggleScreenShare;
   final VoidCallback onHangUp;
 
   const MeetingControlPanel({
     super.key,
     required this.onToggleAudio,
     required this.onToggleVideo,
-    required this.onToggleScreenShare,
     required this.onHangUp,
   });
 
@@ -48,11 +46,6 @@ class _MeetingControlPanelState extends State<MeetingControlPanel> {
                 _isCameraOn = !_isCameraOn;
               });
             },
-            color: Colors.white,
-          ),
-          IconButton(
-            icon: const Icon(Icons.screen_share),
-            onPressed: widget.onToggleScreenShare,
             color: Colors.white,
           ),
           IconButton(

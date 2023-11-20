@@ -27,6 +27,8 @@ dependencies {
     implementation("com.google.firebase:firebase-admin:9.2.0")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("com.corundumstudio.socketio:netty-socketio:2.0.3")
+    implementation("org.springframework.boot:spring-boot-starter-websocket")
+    implementation("org.postgresql:postgresql")
     runtimeOnly("com.h2database:h2")
     implementation("io.jsonwebtoken:jjwt-api:0.11.5")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.11.5")
