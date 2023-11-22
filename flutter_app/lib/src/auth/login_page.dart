@@ -1,26 +1,49 @@
+import 'package:auto_route/auto_route.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import './auth_repository.dart';
+import 'package:flutter_app/src/app.dart';
+import 'package:flutter_app/src/router/app_router.gr.dart';
+import 'auth_service.dart';
 
+@RoutePage()
 class LoginPage extends StatefulWidget {
   static const routeName = '/login';
-
-  const LoginPage({super.key});
+  Function(bool loggedIn)? onLoginCallback;
+  LoginPage({super.key, this.onLoginCallback});
 
   @override
+  // ignore: library_private_types_in_public_api
   _LoginPageState createState() => _LoginPageState();
 }
 
 class _LoginPageState extends State<LoginPage> {
-
   Future<void> _handleSignIn() async {
-    print("handle sign in called");
+    debugPrint("handle sign in called");
     try {
-      print("Calling");
-      final account = await signInWithGoogle();
-      print(account);
-      // Use account for user information, or proceed with Step 5.
+      debugPrint("Calling");
+      var user = await AuthService.signInWithGoogle();
+      debugPrint("User:$user");
+      await AuthService.saveUserName(user.additionalUserInfo?.profile?["name"]);
+      var idToken = await FirebaseAuth.instance.currentUser?.getIdToken();
+
+      var jwtToken = await AuthService.getJWTFromBackend(idToken);
+
+      await AuthService.saveJWTToken(jwtToken);
+      MyApp.of(context).authProvider.login();
+      // context.authProvider.login();
+      widget.onLoginCallback!(true);
+
+      debugPrint("Token:$jwtToken");
     } catch (error) {
-      print('Google Sign-In Error: $error');
+      debugPrint('Error: $error');
+    }
+  }
+
+  @override
+  initState() {
+    super.initState();
+    if (widget.onLoginCallback == null) {
+      AutoRouter.of(context).replace(HomeRoute());
     }
   }
 
@@ -28,12 +51,22 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Google Sign-In Demo'),
+        title: const Text('Register/Login'),
       ),
       body: Center(
-        child: ElevatedButton(
+        child: OutlinedButton(
+          style: ButtonStyle(
+            shape: MaterialStateProperty.all(RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30.0))),
+          ),
           onPressed: _handleSignIn,
-          child: const Text('Sign in with Google'),
+          child: const SizedBox(
+            width: 220,
+            height: 80,
+            child: Center(
+              child: Text('Sign-in with Google'),
+            ),
+          ),
         ),
       ),
     );

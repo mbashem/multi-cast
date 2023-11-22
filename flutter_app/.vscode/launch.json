@@ -1,0 +1,15 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Flutter 3005",
+			"request": "launch",
+			"type": "dart",
+			"args": [
+				"chrome",
+				"--web-port",
+				"3005"
+			],
+		}
+	]
+}
