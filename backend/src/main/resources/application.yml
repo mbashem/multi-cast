@@ -4,25 +4,16 @@ firebase:
 spring:
   application:
     name: spring-security
+  datasource:
+    url: jdbc:postgresql://localhost:49153/multicast
+    username: postgres
+    password: postgrespw
   jpa:
-    # Provide database platform that is being used
-    database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
-      # New database is created when application starts and destroyed when application is stopped
-      ddl-auto: create-drop
-    # Show sql when spring data jpa performs query
-    show-sql: true
+      ddl-auto: create
     properties:
       hibernate:
-        # Format queries
-        format_sql: true
-  datasource:
-    # URL connection to database (spring-security is database name)
-    url: jdbc:h2:mem:spring-security
-    # H2 sql Driver
-    driver-class-name: org.h2.Driver
-    username: root
-    password: 12345
+        dialect: org.hibernate.dialect.PostgreSQLDialect
   h2:
     console:
       enabled: true

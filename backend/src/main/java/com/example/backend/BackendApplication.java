@@ -45,26 +45,4 @@ public class BackendApplication {
 
         SpringApplication.run(BackendApplication.class, args);
     }
-
-//    @Bean
-//    @Primary
-//    public void firebaseInitialization() throws IOException {
-//        Resource resource = new ClassPathResource(keyPath);
-//        FileInputStream serviceAccount = new FileInputStream(resource.getFile());
-//        FirebaseOptions options = new FirebaseOptions.Builder()
-//                .setCredentials(GoogleCredentials.fromStream(serviceAccount))
-//                .build();
-//        if (FirebaseApp.getApps().isEmpty()) {
-//            FirebaseApp.initializeApp(options);
-//            log.info("Firebase...");
-//            log.info(FirebaseApp.getInstance().getName());
-//        }
-//    }
-//
-//    @Bean
-//    @Primary
-//    public ObjectMapper jacksonObjectMapper(Jackson2ObjectMapperBuilder builder) {
-//        ObjectMapper objectMapper = builder.build();
-//        return objectMapper;
-//    }
 }

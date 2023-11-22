@@ -1,3 +1,4 @@
+import 'package:flutter_app/src/auth/auth_service.dart';
 import 'package:flutter_app/src/utils/urls.dart';
 import 'dart:convert';
 
@@ -7,12 +8,14 @@ import 'package:http/http.dart' as http;
 class MeetingApiService {
   static Future<Meeting?> createMeeting() async {
     try {
+      var token = await AuthService.getJWTToken();
       var requestHeaders = {
         'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token'
         // "Access-Control-Allow-Origin": "*"
       };
 
-      var response = await http.get(Uri.parse("$apiURL/public/create-meeting"),
+      var response = await http.get(Uri.parse("$apiURL/create-meeting"),
           headers: requestHeaders);
 
       if (response.statusCode == 200) {

@@ -9,9 +9,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/public")
+@RequestMapping("/api")
 public class MeetingController {
-    @CrossOrigin(origins = "*")
     @GetMapping("/create-meeting")
     public ResponseEntity<CreateMeetingResponse> createMeeting() {
         var meetingId = UUID.randomUUID().toString();

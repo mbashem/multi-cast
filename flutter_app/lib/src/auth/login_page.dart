@@ -31,15 +31,19 @@ class _LoginPageState extends State<LoginPage> {
       await AuthService.saveJWTToken(jwtToken);
       MyApp.of(context).authProvider.login();
       // context.authProvider.login();
-      if (widget.onLoginCallback != null) {
-        widget.onLoginCallback!(true);
-      } else {
-        context.router.replaceNamed(HomeRoute.name);
-      }
+      widget.onLoginCallback!(true);
 
       debugPrint("Token:$jwtToken");
     } catch (error) {
-      debugPrint('Google Sign-In Error: $error');
+      debugPrint('Error: $error');
+    }
+  }
+
+  @override
+  initState() {
+    super.initState();
+    if (widget.onLoginCallback == null) {
+      AutoRouter.of(context).replace(HomeRoute());
     }
   }
 
@@ -56,23 +60,11 @@ class _LoginPageState extends State<LoginPage> {
                 borderRadius: BorderRadius.circular(30.0))),
           ),
           onPressed: _handleSignIn,
-          child: SizedBox(
+          child: const SizedBox(
             width: 220,
             height: 80,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Expanded(
-                    // decoration: BoxDecoration(color: Colors.blue),
-                    child: Image.network(
-                        'http://pngimg.com/uploads/google/google_PNG19635.png',
-                        fit: BoxFit.cover)),
-                const SizedBox(
-                  width: 5.0,
-                ),
-                const Text('Sign-in with Google')
-              ],
+            child: Center(
+              child: Text('Sign-in with Google'),
             ),
           ),
         ),

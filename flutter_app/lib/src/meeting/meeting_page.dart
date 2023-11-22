@@ -77,6 +77,9 @@ class _MeetingPageState extends State<MeetingPage> {
       remoteSessionId: data.sender,
     );
 
+    currP2PMeetingService.isCameraOn = _isCameraOn;
+    currP2PMeetingService.isMicOn = _isMicOn;
+
     await currP2PMeetingService.init(socket!);
     userName[data.sender!] = data.msg!;
 
@@ -215,6 +218,13 @@ class _MeetingPageState extends State<MeetingPage> {
     AutoRouter.of(context).replaceNamed(HomePage.routeName);
   }
 
+  void _sendMicCameraStatus() {
+    for (var element in meetingWidgets) {
+      element.p2pMeetingService
+          .sendMicCameraStatus(micStatus: _isMicOn, cameraStatus: _isCameraOn);
+    }
+  }
+
   @override
   void dispose() {
     super.dispose();
@@ -247,14 +257,14 @@ class _MeetingPageState extends State<MeetingPage> {
                     spacing: spacing,
                     alignment: WrapAlignment.center,
                     children: List.generate(meetingWidgets.length + 1, (index) {
-                      return Container(
+                      return SizedBox(
                         width: w,
                         height: w * 0.8,
                         // color: Colors.green[200],
                         child: ((index == meetingWidgets.length)
                             ? MeetingVideoWidget(
-                                isCameraMuted: false,
-                                isMicMuted: !_isMicOn,
+                                isCameraOn: _isCameraOn,
+                                isMicOn: _isMicOn,
                                 videoRenderer: localVideoRenderer,
                                 userName: name,
                                 mirror: true,
@@ -272,15 +282,20 @@ class _MeetingPageState extends State<MeetingPage> {
                     localMediaStream!.getAudioTracks().forEach((track) {
                       track.enabled = _isMicOn;
                     });
+
+                    _sendMicCameraStatus();
                   });
                 },
                 onToggleVideo: () {
                   // localMediaStream
                   setState(() {
                     _isCameraOn = !_isCameraOn;
+
                     localMediaStream!.getVideoTracks().forEach((track) {
                       track.enabled = _isCameraOn;
                     });
+
+                    _sendMicCameraStatus();
                   });
                 },
                 onHangUp: _hangeUp,

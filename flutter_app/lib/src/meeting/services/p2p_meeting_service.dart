@@ -1,6 +1,8 @@
 import 'dart:convert';
 
+import 'package:flutter_app/main.dart';
 import 'package:flutter_app/src/meeting/models/meeting_event.dart';
+import 'package:flutter_app/src/meeting/models/user_status_event.dart';
 import 'package:flutter_app/src/utils/logger.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:sdp_transform/sdp_transform.dart';
@@ -15,10 +17,61 @@ class P2PMeetingService {
   String? currSessionId;
   String? remoteSessionId;
   bool answerEmited = false;
+  bool isMicOn = false;
+  bool isCameraOn = false;
   List<MeetingEvent> candidateQueue = [];
-
+  RTCDataChannel? dataChannel;
   P2PMeetingService(
       {required this.room, this.currSessionId, this.remoteSessionId});
+
+  _createDataChanel() async {
+    final chanInit = RTCDataChannelInit();
+
+    dataChannel = await rtcConnection!.createDataChannel('stats', chanInit);
+
+    dataChannel!.onMessage = (data) {
+      var userStatus = UserStatusEvent.fromJson(json.decode(data.text));
+      isMicOn = userStatus.isMicOn;
+      isCameraOn = userStatus.isCameraOn;
+      meetingStore.addUpdateStatus(remoteSessionId!, userStatus);
+      logger.i(userStatus);
+    };
+
+    dataChannel!.onDataChannelState = (state) {
+      if (state == RTCDataChannelState.RTCDataChannelOpen) {
+        sendMicCameraStatus(cameraStatus: isCameraOn, micStatus: isMicOn);
+      }
+    };
+  }
+
+  _subscribeDataChanel() {
+    rtcConnection!.onDataChannel = (channel) {
+      dataChannel = channel;
+
+      dataChannel!.onMessage = (data) {
+        var userStatus = UserStatusEvent.fromJson(json.decode(data.text));
+        isMicOn = userStatus.isMicOn;
+        isCameraOn = userStatus.isCameraOn;
+        meetingStore.addUpdateStatus(remoteSessionId!, userStatus);
+        logger.i(userStatus);
+      };
+
+      dataChannel!.onDataChannelState = (state) {
+        if (state == RTCDataChannelState.RTCDataChannelOpen) {
+          sendMicCameraStatus(cameraStatus: isCameraOn, micStatus: isMicOn);
+        }
+      };
+    };
+  }
+
+  void sendMicCameraStatus(
+      {required bool cameraStatus, required bool micStatus}) {
+    isMicOn = micStatus;
+    isCameraOn = cameraStatus;
+
+    dataChannel?.send(RTCDataChannelMessage(json.encode(
+        UserStatusEvent(isMicOn: micStatus, isCameraOn: cameraStatus))));
+  }
 
   init(io.Socket socket) async {
     this.socket = socket;
@@ -64,12 +117,12 @@ class P2PMeetingService {
         });
         socket!.emit("candidate", _createMsg(candidate));
         sentCandidate = true;
-        print(candidate);
+        // logger.i(candidate);
       }
     };
 
     pc.onAddStream = (stream) {
-      print('addStream: ' + stream.id);
+      logger.i('addStream: ${stream.id}');
       remoteVideoRenderer.srcObject = stream;
     };
 
@@ -99,15 +152,13 @@ class P2PMeetingService {
     remoteVideoRenderer.dispose();
   }
 
-  void toggleMic() async {
-    
-  }
+  void toggleMic() async {}
 
   void toggleCamera() async {}
 
   _addCandidateToRTC(MeetingEvent data) async {
     var session = json.decode(data.msg!);
-    logger.i(session);
+    // logger.i(session);
     String currCandidate = session['candidate'];
     String currSDPMid = session['sdpMid'];
     int currSDPMLineIndex = session['sdpMLineIndex'];
@@ -142,9 +193,9 @@ class P2PMeetingService {
 
       RTCSessionDescription description = RTCSessionDescription(sdp, 'answer');
 
-      logger.i("answer: $signalingState");
+      // logger.i("answer: $signalingState");
       await rtcConnection!.setRemoteDescription(description);
-      logger.i(sdp);
+      // logger.i(sdp);
       answerEmited = true;
       await applyCandidate();
     }
@@ -161,7 +212,7 @@ class P2PMeetingService {
       RTCSessionDescription description = RTCSessionDescription(sdp, 'offer');
 
       // print(description.toMap());
-      logger.i("Offer: $signalingState");
+      // logger.i("Offer: $signalingState");
       await rtcConnection!.setRemoteDescription(description);
       _createAnswer();
     }
@@ -171,6 +222,7 @@ class P2PMeetingService {
     if (currSessionId == null || remoteSessionId == null) {
       return;
     }
+    await _createDataChanel();
     RTCSessionDescription description =
         await rtcConnection!.createOffer({'offerToReceiveVideo': 1});
     // var session = parse(description.sdp!);
@@ -184,6 +236,7 @@ class P2PMeetingService {
     if (currSessionId == null || remoteSessionId == null) {
       return;
     }
+    _subscribeDataChanel();
     RTCSessionDescription description =
         await rtcConnection!.createAnswer({'offerToReceiveVideo': 1});
     // var session = parse(description.sdp!);

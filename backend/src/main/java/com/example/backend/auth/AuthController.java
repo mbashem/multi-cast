@@ -14,8 +14,6 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
     final AuthService authService;
 
-    @CrossOrigin(origins = "*")
-
     @PostMapping("/google-signin")
     public ResponseEntity<JWTAuthResponse> signin(@RequestBody GoogleSigninRequest signin) {
         var idToken = signin.getIdToken();
